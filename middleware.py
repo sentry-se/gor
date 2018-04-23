@@ -130,87 +130,39 @@ def process_stdin():
         headers_pos = find_end_of_headers(payload)
         raw_headers = payload[:headers_pos]
         raw_content = payload[headers_pos:]
-        log("\n\nBEFORE DECODE\n")
-        log(raw_metadata)
-        log(raw_headers)
-        log(raw_content)
-        log(len(raw_content))
 
         raw_headers = raw_headers.decode('utf-8')
         raw_headers = re.sub(r'POST /api/([0-9]+)/', r'POST /api/1187558/', raw_headers)  # need to add in new proj_id
-        # raw_headers = re.sub(r'POST /api/([0-9]+)/store', r'POST /y42lxny4', raw_headers) # need to add in new proj_id
         raw_headers = re.sub(r'&sentry_key=([0-9a-z]+)', r'&sentry_key=024eb6c936654c6ab8482b6a03d31aa6',
                              raw_headers)  # need to add in new proj_id
         content_type = re.search('Content-Type: (.*)\r', raw_headers).group(1)
         if 'Content-Encoding:' in raw_headers:
             content_encoding = re.search('Content-Encoding: (.*)\r', raw_headers).group(1)
 
-        # log('\n\nraw content')
-        # log(raw_headers)
-        # log(content_type)
-        # log(content_encoding)
-
-
         if raw_content:  # check if post API?
             if content_type.strip() == "text/plain;charset=UTF-8":
                 raw_content = safely_load_json_string(raw_content)  # decoding
-            elif content_encoding == 'deflate':
-                # log("\n\nINSIDE PYTHON CASE\n")
-                # log(raw_headers)
-                raw_headers = re.sub(r'sentry_key=([0-9a-z]+)', r'sentry_key=024eb6c936654c6ab8482b6a03d31aa6',
-                                     raw_headers)  # need to add in new proj_id
-                # log(raw_headers)
-                raw_headers = re.sub(r'sentry_secret=([0-9a-z]+)', r'sentry_secret=1225a9a99d744c168a94d6e85a91c214',
-                                     raw_headers)  # need to add in new proj_id
+            # elif content_encoding == 'deflate':
+            #     raw_headers = re.sub(r'sentry_key=([0-9a-z]+)', r'sentry_key=024eb6c936654c6ab8482b6a03d31aa6',
+            #                          raw_headers)  # need to add in new proj_id
+            #     raw_headers = re.sub(r'sentry_secret=([0-9a-z]+)', r'sentry_secret=1225a9a99d744c168a94d6e85a91c214',
+            #                          raw_headers)  # need to add in new proj_id
+            #     raw_content = decompress_deflate(raw_content)
+            # elif raw_content[0] != b'{':
+            #     raw_content = decode_and_decompress_data(raw_content)
 
-                raw_content = decompress_deflate(raw_content)
-                # raw_content = zlib.decompress(raw_content).decode(encoding='UTF-8')
-                log("\n\nAFTER DECOMPRESS\n")
-                log(raw_headers)
-                log(raw_content)
-                raw_content = safely_load_json_string(raw_content)  # decoding
-
-                log("\n\nAFTER JSON SAFE LOAD\n")
-                log(raw_content)
-
-
-
-            elif raw_content[0] != b'{':
-                raw_content = decode_and_decompress_data(raw_content)
-
-            # raw_content["project"] = "NEW_PROJECT"
             raw_content["project"] = "1187558"
             raw_content = json.dumps(raw_content).encode('utf-8')
 
-            request_type_id = int(raw_metadata.split(b' ')[0])
-
-            # re-encode python body
+            # re-encode python body (raw_content)
             if content_encoding == 'deflate':
                 log("")
 
             new_str = 'Content-Length: %s' % len(raw_content)
             raw_headers = re.sub(r'Content-Length: [0-9]+', new_str, raw_headers)
-
-            log("\n\nAFTER REWRITE\n")
-            log(raw_metadata)
-            log(raw_headers)
-            log(raw_content)
-            log(len(raw_content))
-            raw_headers = raw_headers.encode('utf-8')  # decode back... maybe utf-8?
-
-            log("\n\nAFTER RE-ENCODE\n")
-            log(raw_metadata)
-            log(raw_headers)
-            log(raw_content)
-
+            raw_headers = raw_headers.encode('utf-8')  # decode headers
             encoded = binascii.hexlify(raw_metadata + b'\n' + raw_headers + raw_content).decode('ascii')
-
-            log("\n\nFINAL\n")
-            log(encoded)
-
             sys.stdout.write(encoded + '\n')
-
-            log("\nafter stdout\n")
 
 
 if __name__ == '__main__':
